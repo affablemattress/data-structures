@@ -1,14 +1,21 @@
 #pragma once
+#include <concepts>
 #include <utility>
 #include <stdexcept>
 
 template<typename KeyType, typename DataType>
+	requires (std::totally_ordered<KeyType> && std::copyable<KeyType>
+			  && std::copyable<DataType>)
 class binary_search_tree_node;
 
 template<typename KeyType, typename DataType>
+	requires (std::totally_ordered<KeyType> && std::copyable<KeyType>
+			  && std::copyable<DataType>)
 class binary_search_tree;
 
 template<typename KeyType, typename DataType>
+	requires (std::totally_ordered<KeyType> && std::copyable<KeyType>
+			  && std::copyable<DataType>)
 class binary_search_tree_iterator {
 	using Iterator = typename binary_search_tree_iterator;
 	using Node = typename binary_search_tree_node<KeyType, DataType>;
@@ -85,6 +92,8 @@ private:
 };
 
 template<typename KeyType, typename DataType>
+	requires (std::totally_ordered<KeyType> && std::copyable<KeyType>
+			  && std::copyable<DataType>)
 class binary_search_tree_node {
 	using Node = typename binary_search_tree_node;
 public:
@@ -109,6 +118,8 @@ private:
 };
 
 template<typename KeyType, typename DataType>
+	requires (std::totally_ordered<KeyType> && std::copyable<KeyType>
+			  && std::copyable<DataType>)
 class binary_search_tree {
 	using Iterator = typename binary_search_tree_iterator<KeyType, DataType>;
 	using Node = typename binary_search_tree_node<KeyType, DataType>;

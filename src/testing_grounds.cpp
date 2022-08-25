@@ -16,13 +16,13 @@
 //#define TRACE
 class Dummy {
 public:
-	Dummy(Dummy& other)
+	Dummy(const Dummy& other)
 		: order(count++)
 		, array(new int[10]) {
 		for (size_t i = 0; i < 10; i++)
 			this->array[i] = other.array[i];
 	}
-	Dummy& operator=(Dummy& other) {
+	Dummy& operator=(const Dummy& other) {
 		if (this != &other) {
 			this->order = other.order;
 			for (size_t i = 0; i < 10; i++)
@@ -65,7 +65,7 @@ private:
 };
 class Tracer {
 public:
-	Tracer(Tracer& other) 
+	Tracer(const Tracer& other) 
 		: order(other.order) 
 		, array(new int[10])
 		, dummy(new Dummy(*(other.dummy))) {
@@ -75,7 +75,7 @@ public:
 		for (size_t i = 0; i < 5; i++)
 			this->array[i] = other.array[i];
 	}
-	Tracer& operator=(Tracer& other) {
+	Tracer& operator=(const Tracer& other) {
 #ifdef TRACE
 		std::cout << "Copy Assigned [" << other.order << "]\n";
 #endif // TRACE
@@ -148,27 +148,27 @@ constexpr size_t iter = 1000;
 constexpr size_t size = 10;
 
 namespace BSTUtilities{
-	void PushLevel(binary_search_tree<int, Tracer>& bst, int treeHeight, int level) {
-		uint32_t numberOfElementsInLevel = 1 << treeHeight - level;;
-		uint32_t firstElementsKey = 1 << level - 1;
+	void PushLevel(binary_search_tree<int, Tracer>& bst, size_t treeHeight, size_t level) {
+		uint32_t numberOfElementsInLevel = 1 << (treeHeight - level);;
+		uint32_t firstElementsKey = 1 << (level - 1);
 		uint32_t increment = 1 << level;
-		for (size_t i = 0; i < numberOfElementsInLevel; i++)
+		for (uint32_t i = 0; i < numberOfElementsInLevel; i++)
 		{
 			uint32_t key = firstElementsKey + (increment * i);
 			bst.emplace(key, key);
-	#ifdef TRACE
+#ifdef TRACE
 			std::cerr << ">>>Emplaced " << key << "\n";
-	#endif // !TRACE
+#endif // !TRACE
 		}
 	}
 	binary_search_tree<int, Tracer> CreatePerfectTree(int treeHeight) {
-	binary_search_tree<int, Tracer> bst;
-	for (size_t i = treeHeight; i > 0; i--)
-	{
-		PushLevel(bst, treeHeight, i);
+		binary_search_tree<int, Tracer> bst;
+		for (size_t i = treeHeight; i > 0; i--)
+		{
+			PushLevel(bst, treeHeight, i);
+		}
+		return bst;
 	}
-	return bst;
-}
 }
 
 int main(int argc, char** args) {
