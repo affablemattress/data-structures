@@ -218,7 +218,7 @@ public:
 	}
 
 	binary_search_tree(binary_search_tree& other) 
-		: root_(nullptr) {    //TO DO: Implement copy constructor?
+		: root_(nullptr) {
 		if (other.root_)
 			clone_subtree(nullptr, this->root_, other.root_);
 	}
