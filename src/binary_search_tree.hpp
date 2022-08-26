@@ -38,7 +38,7 @@ public:
 
 	Iterator& operator++() {
 		if (!ptr_) {
-			return *this;
+			return (*this);
 		}
 
 		if (ptr_->right_) {
@@ -48,12 +48,9 @@ public:
 			}
 			return *this;
 		}
-		while (true) {
-			if (!ptr_->parent_) {
-				ptr_ = nullptr;
-				return *this;
-			}
-			else if (ptr_->key < ptr_->parent_->key) {
+
+		while (ptr_->parent_) {
+			if (ptr_->key < ptr_->parent_->key) {
 				ptr_ = ptr_->parent_;
 				return *this;
 			}
@@ -61,10 +58,17 @@ public:
 				ptr_ = ptr_->parent_;
 			}
 		}
+
+		ptr_ = nullptr;
+		return *this;
 	}
 	Iterator operator++(int) {
-		Iterator temp = Iterator(*this);
+		Iterator temp = *this;
 		++(*this);
+		if (!temp.ptr_) {
+			return (temp);
+		}
+
 		if (temp.ptr_->right_) {
 			temp.ptr_ = temp.ptr_->right_;
 			while (temp.ptr_->left_) {
@@ -72,12 +76,9 @@ public:
 			}
 			return temp;
 		}
-		while (true) {
-			if (!temp.ptr_->parent_) {
-				temp.ptr_ = nullptr;
-				return temp;
-			}
-			else if (temp.ptr_->key < temp.ptr_->parent_->key) {
+
+		while (temp.ptr_->parent_) {
+			if (temp.ptr_->key < temp.ptr_->parent_->key) {
 				temp.ptr_ = temp.ptr_->parent_;
 				return temp;
 			}
@@ -85,6 +86,9 @@ public:
 				temp.ptr_ = temp.ptr_->parent_;
 			}
 		}
+
+		temp.ptr_ = nullptr;
+		return temp;
 	}
 
 	DataType* operator->() {
@@ -116,8 +120,7 @@ public:
 	template <typename... ArgTypes>
 	binary_search_tree_node(const KeyType& key_, ArgTypes&&... args)
 		: key(key_)
-		, data(std::forward<ArgTypes>(args)...) {
-	}
+		, data(DataType(std::forward<ArgTypes>(args)...)) {}
 
 	friend binary_search_tree_iterator<KeyType, DataType>;
 	friend binary_search_tree<KeyType, DataType>;
@@ -145,7 +148,7 @@ public:
 	}
 
 	// Creates a node on the tree. Does a copy operation on the data.
-	void insert(const KeyType& key, DataType& data) {
+	void insert(const KeyType& key, const DataType& data) {
 		Node* newNode = new Node(key, data);
 		if (root_) {
 			Node* correctLeaf = find_correct_leaf_for_key_in_subtree(key, this->root_);
@@ -278,26 +281,6 @@ public:
 
 	binary_search_tree() {}
 private:
-	// Recursive method that searches a subtree for key.
-	// Used by search() and remove() methods.
-	// @return nullptr if key is not present in the tree.
-	static Node* search_subtree(const KeyType& key, Node* node) {
-		if (!node) {
-			return nullptr;
-		}
-		else {
-			if (node->key == key) {
-				return node;
-			}
-			else if (key < node->key) {
-				return search_subtree(key, node->left_);
-			}
-			else {
-				return search_subtree(key, node->right_);
-			}
-		}
-	}
-
 	// Recursive method that searches a subtree for a suitable leaf node to attach the passed node to.
 	// Used by insert() and emplace() methods.
 	// @exception std::invalid_argument if key is already in the tree.
@@ -323,6 +306,24 @@ private:
 		}
 	}
 
+	// Recursive method that searches a subtree for key.
+	// Used by search() and remove() methods.
+	// @return nullptr if key is not present in the tree.
+	static Node* search_subtree(const KeyType& key, Node* node) {
+		if (!node) {
+			return nullptr;
+		}
+		
+		if (key < node->key) {
+			return search_subtree(key, node->left_);
+		}
+		else if (key < node->key) {
+			return search_subtree(key, node->right_);
+		}
+		else {
+			return node;
+		}
+	}
 	// Recursive method that clears a subtree. 
 	// Used by clear() method.
 	static void clear_subtree(Node* node) {
@@ -332,7 +333,7 @@ private:
 			clear_subtree(node->right_);
 		delete node;
 	}
-	// Recursive method that clears a subtree. 
+	// Recursive method that copies a subtree to destination. 
 	// Used by the copy constructor and the copy assign operator.
 	static void clone_subtree(Node* destinationParent, Node*& destination, Node*& source) {
 		destination = new Node(*source);
@@ -345,12 +346,10 @@ private:
 
 	// Inserts an existing node into the tree.
 	void insert(Node* node) {
-		KeyType& key = node->key;
-
 		if (root_) {
-			Node* correctLeaf = find_correct_leaf_for_key_in_subtree(key, this->root_);
+			Node* correctLeaf = find_correct_leaf_for_key_in_subtree(node->key, this->root_);
 			node->parent_ = correctLeaf;
-			if (key < correctLeaf->key) {
+			if (node->key < correctLeaf->key) {
 				correctLeaf->left_ = node;
 			}
 			else {
