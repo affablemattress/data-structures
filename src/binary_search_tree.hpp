@@ -3,16 +3,25 @@
 #include <utility>
 #include <stdexcept>
 
+// <<<-------------------------------------------------->>>
+// <<<----------- Class forward declarations ----------->>>
+// <<<-------------------------------------------------->>>
+template<typename KeyType, typename DataType>
+	requires (std::totally_ordered<KeyType>&& std::copyable<KeyType>
+			  && std::copyable<DataType>)
+class binary_search_tree_iterator;
 template<typename KeyType, typename DataType>
 	requires (std::totally_ordered<KeyType> && std::copyable<KeyType>
 			  && std::copyable<DataType>)
 class binary_search_tree_node;
-
 template<typename KeyType, typename DataType>
 	requires (std::totally_ordered<KeyType> && std::copyable<KeyType>
 			  && std::copyable<DataType>)
 class binary_search_tree;
 
+
+// An in-order traversal forward iterator.
+// end() iterator is nullptr.
 template<typename KeyType, typename DataType>
 	requires (std::totally_ordered<KeyType> && std::copyable<KeyType>
 			  && std::copyable<DataType>)
@@ -91,14 +100,15 @@ private:
 	Node* ptr_;
 };
 
+// Holds a key-data pair.
 template<typename KeyType, typename DataType>
 	requires (std::totally_ordered<KeyType> && std::copyable<KeyType>
 			  && std::copyable<DataType>)
 class binary_search_tree_node {
 	using Node = typename binary_search_tree_node;
 public:
-	KeyType key;
 	DataType data;
+	const KeyType key;
 
 	binary_search_tree_node(const KeyType& key_, DataType&& data_)
 		: key(key_)
@@ -117,6 +127,11 @@ private:
 	Node* parent_ = nullptr;
 };
 
+// A binary search tree implementation.
+// The key is a seperate member from the data, this means the DataType 
+// doesn't have to have comparison operators implemented.
+// KeyType must be copyable and totally_ordered.
+// DataType must be copyable.
 template<typename KeyType, typename DataType>
 	requires (std::totally_ordered<KeyType> && std::copyable<KeyType>
 			  && std::copyable<DataType>)
@@ -124,10 +139,12 @@ class binary_search_tree {
 	using Iterator = typename binary_search_tree_iterator<KeyType, DataType>;
 	using Node = typename binary_search_tree_node<KeyType, DataType>;
 public:
+	// @return nullptr if key is not present in the tree.
 	Node* search(const KeyType& key) {
 		return search_subtree(key, root_);
 	}
 
+	// Creates a node on the tree. Does a copy operation on the data.
 	void insert(const KeyType& key, DataType& data) {
 		Node* newNode = new Node(key, data);
 		if (root_) {
@@ -144,6 +161,7 @@ public:
 			root_ = newNode;
 		}
 	}
+	// Creates a node on the tree. Does a move operation on the data.
 	void insert(const KeyType& key, DataType&& data) {
 		Node* newNode = new Node(key, std::move(data));
 		if (root_) {
@@ -160,6 +178,8 @@ public:
 			root_ = newNode;
 		}
 	}
+	// Creates a node on the tree. Constructs the DataType object in place (avoids copy/move operations).
+	// @param[...args] args are passed to the DataType constructor.
 	template <typename... ArgTypes>
 	void emplace(const KeyType key, ArgTypes... args) {
 		Node* newNode = new Node(key, std::forward<ArgTypes>(args)...);
@@ -178,6 +198,7 @@ public:
 		}
 	}
 
+	// Removes an element from the tree and calls the destructor on its data.
 	void remove(const KeyType& key) {
 		Node* node = this->search(key);
 
@@ -205,12 +226,14 @@ public:
 		}
 
 	}
+	// Removes all elements from the tree.
 	void clear() {
 		if (this->root_)
 			clear_subtree(this->root_);
 			this->root_ = nullptr;
 	}
 
+	// @return An in-order traversal forward iterator pointing at the smallest element of the tree.
 	Iterator begin() {
 		if (!this->root_) {
 			return Iterator(nullptr);
@@ -223,7 +246,8 @@ public:
 			else
 				return Iterator(smallestNode);
 		}
-	}             
+	}   
+	// @return An in-order traversal forward iterator pointing at nullptr.
 	Iterator end() {
 		return Iterator(nullptr);
 	}
@@ -254,6 +278,9 @@ public:
 
 	binary_search_tree() {}
 private:
+	// Recursive method that searches a subtree for key.
+	// Used by search() and remove() methods.
+	// @return nullptr if key is not present in the tree.
 	static Node* search_subtree(const KeyType& key, Node* node) {
 		if (!node) {
 			return nullptr;
@@ -271,6 +298,9 @@ private:
 		}
 	}
 
+	// Recursive method that searches a subtree for a suitable leaf node to attach the passed node to.
+	// Used by insert() and emplace() methods.
+	// @exception std::invalid_argument if key is already in the tree.
 	static Node* find_correct_leaf_for_key_in_subtree(const KeyType& key, Node* node) {
 		if (node->key == key) {
 			throw std::invalid_argument("Key is already in tree.");
@@ -293,6 +323,8 @@ private:
 		}
 	}
 
+	// Recursive method that clears a subtree. 
+	// Used by clear() method.
 	static void clear_subtree(Node* node) {
 		if (node->left_)
 			clear_subtree(node->left_);
@@ -300,6 +332,8 @@ private:
 			clear_subtree(node->right_);
 		delete node;
 	}
+	// Recursive method that clears a subtree. 
+	// Used by the copy constructor and the copy assign operator.
 	static void clone_subtree(Node* destinationParent, Node*& destination, Node*& source) {
 		destination = new Node(*source);
 		destination->parent_ = destinationParent;
@@ -309,6 +343,7 @@ private:
 			clone_subtree(destination, destination->right_, source->right_);
 	}
 
+	// Inserts an existing node into the tree.
 	void insert(Node* node) {
 		KeyType& key = node->key;
 

@@ -13,11 +13,11 @@
 
 #define LOG(msg) std::cerr << msg << "\n";
 
-//#define TRACE
+//#define TRACE // Define TRACE to enable Tracer console output.
 class Dummy {
 public:
 	Dummy(const Dummy& other)
-		: order(count++)
+		: order(count_++)
 		, array(new int[10]) {
 		for (size_t i = 0; i < 10; i++)
 			this->array[i] = other.array[i];
@@ -31,7 +31,7 @@ public:
 		}
 	}
 	Dummy(Dummy&& other) noexcept
-		: order(count++)
+		: order(count_++)
 		, array(other.array) {
 		other.array = nullptr;
 	}
@@ -51,17 +51,17 @@ public:
 	Dummy(int order_)
 		: order(order_)
 		, array(new int[10]) {
-		count++;
+		count_++;
 	}
 	Dummy()
-		: order(count++)
+		: order(count_++)
 		, array(new int[10]) {
 	}
 
 	int order;
 	int* array;
 private:
-	inline static int count = 0;
+	inline static int count_ = 0;
 };
 class Tracer {
 public:
@@ -86,7 +86,7 @@ public:
 		return *this;
 	}
 	Tracer(Tracer&& other) noexcept
-		: order(count++)
+		: order(count_++)
 		, array(other.array) 
 		, dummy(other.dummy) {
 		other.array = nullptr;
@@ -122,16 +122,16 @@ public:
 		: order(order_)
 		, array(new int[10])
 		, dummy(new Dummy()) {
-		count++;
+		count_++;
 #ifdef TRACE
 		std::cout << "Constructed [" << this->order << "]\n";
 #endif // TRACE
 	}
 	Tracer()
-		: order(count++) 
+		: order(count_++) 
 		, array(new int[10])
 		, dummy(new Dummy()) {
-		count++;
+		count_++;
 #ifdef TRACE
 		std::cout << "Default Constructed [" << this->order << "]\n";
 #endif // !TRACE
@@ -141,11 +141,8 @@ public:
 	int* array;
 	Dummy* dummy;
 private:
-	inline static int count = 0;
+	inline static int count_ = 0;
 };
-
-constexpr size_t iter = 1000;
-constexpr size_t size = 10;
 
 namespace BSTUtilities{
 	void PushLevel(binary_search_tree<int, Tracer>& bst, size_t treeHeight, size_t level) {
@@ -172,8 +169,10 @@ namespace BSTUtilities{
 }
 
 int main(int argc, char** args) {
-	unsigned int counter = 0;
+	constexpr size_t iter = 1000;
+	constexpr size_t size = 10;
 
+	unsigned int counter = 0;
 	binary_search_tree<int, Tracer> bstXXL = BSTUtilities::CreatePerfectTree(size);
 	ITERATE_TIMER_START(iter)
 		counter += bstXXL.search(1)->data.order;
