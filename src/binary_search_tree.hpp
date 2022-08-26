@@ -144,61 +144,66 @@ class binary_search_tree {
 public:
 	// @return nullptr if key is not present in the tree.
 	Node* search(const KeyType& key) {
-		return search_subtree(key, root_);
+		if (root_) {
+			return search_subtree(key, root_);
+		}
+		else {
+			return nullptr;
+		}
 	}
 
 	// Creates a node on the tree. Does a copy operation on the data.
-	void insert(const KeyType& key, const DataType& data) {
+	bool insert(const KeyType& key, const DataType& data) {
 		Node* newNode = new Node(key, data);
 		if (root_) {
-			Node* correctLeaf = find_correct_leaf_for_key_in_subtree(key, this->root_);
-			newNode->parent_ = correctLeaf;
-			if (key < correctLeaf->key) {
-				correctLeaf->left_ = newNode;
+			Node* parent = find_parent_for_key_in_subtree(key, root_);
+			if (parent) {
+				this->insert_node_at(parent, newNode);
 			}
 			else {
-				correctLeaf->right_ = newNode;
+				return false;
 			}
 		}
 		else {
 			root_ = newNode;
 		}
+		return true;
 	}
-	// Creates a node on the tree. Does a move operation on the data.
-	void insert(const KeyType& key, DataType&& data) {
+	// Creates a newNode on the tree. Does a move operation on the data.
+	bool insert(const KeyType& key, DataType&& data) {
 		Node* newNode = new Node(key, std::move(data));
 		if (root_) {
-			Node* correctLeaf = find_correct_leaf_for_key_in_subtree(key, this->root_);
-			newNode->parent_ = correctLeaf;
-			if (key < correctLeaf->key) {
-				correctLeaf->left_ = newNode;
+			Node* parent = find_parent_for_key_in_subtree(key, root_);
+			if (parent) {
+				this->insert_node_at(parent, newNode);
 			}
 			else {
-				correctLeaf->right_ = newNode;
+				return false;
 			}
 		}
 		else {
 			root_ = newNode;
 		}
+		return true;
 	}
-	// Creates a node on the tree. Constructs the DataType object in place (avoids copy/move operations).
+	// Creates a newNode on the tree. Constructs the DataType object in place (avoids copy/move operations).
 	// @param[...args] args are passed to the DataType constructor.
 	template <typename... ArgTypes>
-	void emplace(const KeyType key, ArgTypes... args) {
+	bool emplace(const KeyType key, ArgTypes... args) {
 		Node* newNode = new Node(key, std::forward<ArgTypes>(args)...);
 		if (root_) {
-			Node* correctLeaf = find_correct_leaf_for_key_in_subtree(key, this->root_);
-			newNode->parent_ = correctLeaf;
-			if (key < correctLeaf->key) {
-				correctLeaf->left_ = newNode;
+			Node* parent = find_parent_for_key_in_subtree(key, root_);
+			if (parent) {
+				this->insert_node_at(parent, newNode);
 			}
 			else {
-				correctLeaf->right_ = newNode;
+				return false;
 			}
 		}
 		else {
 			root_ = newNode;
 		}
+		return true;
 	}
 
 	// Removes an element from the tree and calls the destructor on its data.
@@ -243,12 +248,10 @@ public:
 		}
 
 		Node* smallestNode = this->root_;
-		while (true) {
-			if (smallestNode->left_)
-				smallestNode = smallestNode->left_;
-			else
-				return Iterator(smallestNode);
+		while (smallestNode->left_) {
+			smallestNode = smallestNode->left_;
 		}
+		return Iterator(smallestNode);
 	}   
 	// @return An in-order traversal forward iterator pointing at nullptr.
 	Iterator end() {
@@ -281,19 +284,19 @@ public:
 
 	binary_search_tree() {}
 private:
-	// Recursive method that searches a subtree for a suitable leaf node to attach the passed node to.
+	// Recursive method that searches a subtree for a suitable parent to attach the passed key to.
 	// Used by insert() and emplace() methods.
-	// @exception std::invalid_argument if key is already in the tree.
-	static Node* find_correct_leaf_for_key_in_subtree(const KeyType& key, Node* node) {
+	// @return nullptr if key is already in the tree.
+	static Node* find_parent_for_key_in_subtree(const KeyType& key, Node* node) {
 		if (node->key == key) {
-			throw std::invalid_argument("Key is already in tree.");
+			return nullptr;
 		}
 		else if (key < node->key) {
 			if (!node->left_) {
 				return node;
 			}
 			else {
-				return find_correct_leaf_for_key_in_subtree(key, node->left_);
+				return find_parent_for_key_in_subtree(key, node->left_);
 			}
 		} 
 		else {
@@ -301,8 +304,18 @@ private:
 				return node;
 			}
 			else {
-				return find_correct_leaf_for_key_in_subtree(key, node->right_);
+				return find_parent_for_key_in_subtree(key, node->right_);
 			}
+		}
+	}
+	// Inserts an existing node into the tree. 
+	static void insert_node_at(Node* parent, Node* node) {
+		node->parent_ = parent;
+		if (node->key < parent->key) {
+			parent->left_ = node;
+		}
+		else {
+			parent->right_ = node;
 		}
 	}
 
@@ -310,15 +323,21 @@ private:
 	// Used by search() and remove() methods.
 	// @return nullptr if key is not present in the tree.
 	static Node* search_subtree(const KeyType& key, Node* node) {
-		if (!node) {
-			return nullptr;
-		}
-		
 		if (key < node->key) {
-			return search_subtree(key, node->left_);
+			if (node->left_) {
+				return search_subtree(key, node->left_);
+			} 
+			else {
+				return nullptr;
+			}
 		}
 		else if (key < node->key) {
-			return search_subtree(key, node->right_);
+			if (node->right_) {
+				return search_subtree(key, node->right_);
+			}
+			else {
+				return nullptr;
+			}
 		}
 		else {
 			return node;
@@ -342,24 +361,6 @@ private:
 			clone_subtree(destination, destination->left_, source->left_);
 		if (source->right_)
 			clone_subtree(destination, destination->right_, source->right_);
-	}
-
-	// Inserts an existing node into the tree.
-	void insert(Node* node) {
-		if (root_) {
-			Node* correctLeaf = find_correct_leaf_for_key_in_subtree(node->key, this->root_);
-			node->parent_ = correctLeaf;
-			if (node->key < correctLeaf->key) {
-				correctLeaf->left_ = node;
-			}
-			else {
-				correctLeaf->right_ = node;
-			}
-		}
-		else {
-			root_ = node;
-			node->parent_ = nullptr;
-		}
 	}
 
 	Node* root_ = nullptr;
