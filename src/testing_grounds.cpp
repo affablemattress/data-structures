@@ -173,10 +173,16 @@ int main(int argc, char** args) {
 	constexpr size_t size = 16;
 
 	unsigned int counter = 0;
-	binary_search_tree<int, Tracer> bstXXL = BSTUtilities::CreatePerfectTree(size);
 	ITERATE_TIMER_START(iter)
-		for (Tracer& tracer : bstXXL) {
-			counter += tracer.order;
-		};
-	ITERATE_TIMER_END("Full Depth Search with Tree of Depth " << size)
+	binary_search_tree<int, Tracer> bstXXL = BSTUtilities::CreatePerfectTree(size);
+	LOG("Remove 8:  " << bstXXL.remove(8))
+	LOG("Search 8:  " << bstXXL.search(8))
+	LOG("Remove 8:  " << bstXXL.remove(8))
+	LOG("Emplace 8: " << bstXXL.emplace(8, 8))
+	LOG("Search 8:  " << bstXXL.search(8))
+	LOG("Emplace 8: " << bstXXL.emplace(8, 8))
+	for (Tracer& tracer : bstXXL) {
+		counter += tracer.order;
+	};
+ 	ITERATE_TIMER_END("Full Depth Search with Tree of Depth " << size)
 }

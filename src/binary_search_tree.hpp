@@ -112,7 +112,7 @@ class binary_search_tree_node {
 	using Node = typename binary_search_tree_node;
 public:
 	DataType data;
-	const KeyType key;
+	KeyType key;
 
 	binary_search_tree_node(const KeyType& key_, DataType&& data_)
 		: key(key_)
@@ -210,32 +210,45 @@ public:
 	}
 
 	// Removes an element from the tree and calls the destructor on its data.
-	void remove(const KeyType& key) {
+	bool remove(const KeyType& key) {
 		Node* node = this->search(key);
 
 		if (node) {
-			if (this->root_ != node)
-			{
-				if (key > node->parent_->key) {
-					node->parent_->right_ = nullptr;
+			Node*& parentsCorrectPointer = (node->key < node->parent_->key) ? node->parent_->left_ : node->parent_->right_;
+			if (!(node->left_ || node->right_)) { //HEIGHT OF node->parent_ AND UPPER REDUCED BY 1
+				parentsCorrectPointer = nullptr; 
+				delete node;
+			}
+			else if (node->left_ && node->right_) { //HEIGHT OF carryNode->parent_  AND UPPER REDUCED BY 1
+				Node* carryNode = find_max_in_subtree(node->left_);
+				node->key = std::move(carryNode->key);
+				node->data = std::move(carryNode->data);
+				if (carryNode->left_) {
+					carryNode->left_->parent_ = carryNode->parent_;
+					carryNode->parent_->right_ = carryNode->left_;
 				}
 				else {
-					node->parent_->left_ = nullptr;
+					carryNode->parent_->right_ = nullptr;
 				}
-			} 
-			else {
-				this->root_ = nullptr;
+				delete carryNode;
 			}
-
-			if (node->left_) {
-				this->insert(node->left_);
+			else { //HEIGHT OF node->parent_ AND UPPER REDUCED BY 1
+				if (node->left_) {
+					parentsCorrectPointer = node->left_;
+					node->left_->parent_ = node->parent_;
+					delete node;
+				}
+				else {
+					parentsCorrectPointer = node->right_;
+					node->right_->parent_ = node->parent_;
+					delete node;
+				}
 			}
-			if (node->right_) {
-				this->insert(node->right_);
-			}
-			delete node;
+			return true;
 		}
-
+		else {
+			return false;
+		}
 	}
 	// Removes all elements from the tree.
 	void clear() {
@@ -244,17 +257,30 @@ public:
 			this->root_ = nullptr;
 	}
 
+	Node* min() {
+		if (root_) {
+			return find_min_in_subtree(root_);
+		}
+		else {
+			return nullptr;
+		}
+	}
+	Node* max() {
+		if (root_) {
+			return find_max_in_subtree(root_);
+
+		}
+		else {
+			return nullptr;
+		}
+	}
+
 	// @return An in-order traversal forward iterator pointing at the smallest element of the tree.
 	Iterator begin() {
 		if (!this->root_) {
 			return Iterator(nullptr);
 		}
-
-		Node* smallestNode = this->root_;
-		while (smallestNode->left_) {
-			smallestNode = smallestNode->left_;
-		}
-		return Iterator(smallestNode);
+		return Iterator(this->min());
 	}   
 	// @return An in-order traversal forward iterator pointing at nullptr.
 	Iterator end() {
@@ -323,6 +349,21 @@ private:
 		}
 	}
 
+	static Node* find_min_in_subtree(Node* node) {
+		Node* smallestNode = node;
+		while (smallestNode->left_) {
+			smallestNode = smallestNode->left_;
+		}
+		return smallestNode;
+	}
+	static Node* find_max_in_subtree(Node* node) {
+		Node* largestNode = node;
+		while (largestNode->right_) {
+			largestNode = largestNode->right_;
+		}
+		return largestNode;
+	}
+
 	// Recursive method that searches a subtree for key.
 	// Used by search() and remove() methods.
 	// @return nullptr if key is not present in the tree.
@@ -335,7 +376,7 @@ private:
 				return nullptr;
 			}
 		}
-		else if (key < node->key) {
+		else if (key > node->key) {
 			if (node->right_) {
 				return search_subtree(key, node->right_);
 			}
