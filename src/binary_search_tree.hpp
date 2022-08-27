@@ -161,6 +161,7 @@ public:
 				this->insert_node_at(parent, newNode);
 			}
 			else {
+				delete newNode;
 				return false;
 			}
 		}
@@ -178,6 +179,7 @@ public:
 				this->insert_node_at(parent, newNode);
 			}
 			else {
+				delete newNode;
 				return false;
 			}
 		}
@@ -197,6 +199,7 @@ public:
 				this->insert_node_at(parent, newNode);
 			}
 			else {
+				delete newNode;
 				return false;
 			}
 		}
@@ -258,19 +261,19 @@ public:
 		return Iterator(nullptr);
 	}
 
-	binary_search_tree(binary_search_tree& other) 
-		: root_(nullptr) {
+	binary_search_tree(const binary_search_tree& other) {
+		this->root_ = nullptr;
 		if (other.root_)
 			clone_subtree(nullptr, this->root_, other.root_);
 	}
-	binary_search_tree& operator=(binary_search_tree& other) {
+	binary_search_tree& operator=(const binary_search_tree& other) {
 		this->clear();
 		if (other.root_)
 			clone_subtree(nullptr, this->root_, other.root_);
 		return *this;
 	}
-	binary_search_tree(binary_search_tree&& other) noexcept
-		: root_(other.root_) {
+	binary_search_tree(binary_search_tree&& other) noexcept {
+		this->root_ = other.root_;
 		other.root_ = nullptr;
 	}
 	binary_search_tree& operator=(binary_search_tree&& other) noexcept {
@@ -282,7 +285,8 @@ public:
 		this->clear();
 	}
 
-	binary_search_tree() {}
+	binary_search_tree()
+		: root_(nullptr) {}
 private:
 	// Recursive method that searches a subtree for a suitable parent to attach the passed key to.
 	// Used by insert() and emplace() methods.
@@ -363,5 +367,5 @@ private:
 			clone_subtree(destination, destination->right_, source->right_);
 	}
 
-	Node* root_ = nullptr;
+	Node* root_;
 };
