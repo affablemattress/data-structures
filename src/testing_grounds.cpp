@@ -1,9 +1,12 @@
 #include "tracked_array.hpp"
 #include "binary_search_tree.hpp"
+#include "avl_tree.hpp"
 
 #include <iostream>
 #include <chrono>
 #include <cstdint>
+#include <vector>
+#include <ctime>
 
 #define TIMER_START {auto _TStartTime = std::chrono::high_resolution_clock::now();
 #define TIMER_END(timerName) auto _TCurrentTime = std::chrono::high_resolution_clock::now(); std::cerr << "<<< [" << timerName << "] ran for: " << (_TCurrentTime - _TStartTime) << " >>>\n";}
@@ -144,21 +147,89 @@ private:
 	inline static int count_ = 0;
 };
 
+
+namespace AVLUtilities {
+	size_t* GetRandomizedArrayOfSize(size_t size) {
+		size_t* array = new size_t[size];
+		for (size_t i = 0; i < size; i++) {
+			array[i] = i;
+		}
+		for (size_t i = 0; i < size * 3; i++) {
+			const size_t firstIndex = rand() % size;
+			size_t first = array[firstIndex];
+			size_t secondIndex = rand() % size;
+			while (secondIndex == firstIndex) {
+				secondIndex = rand() % size;
+			}
+			size_t second = array[secondIndex];
+
+			array[firstIndex] = second;
+			array[secondIndex] = first;
+		}
+		return array;
+	}
+
+	avl_tree<int, Tracer> RandomlyCreatePerfectTreeOfHeight(size_t treeHeight) {
+		avl_tree<int, Tracer> avl;
+		const size_t numberOfElements = (1 << treeHeight) - 1;
+		const size_t* indices = GetRandomizedArrayOfSize(numberOfElements);
+
+		for (size_t i = 0; i < numberOfElements; i++) {
+			avl.emplace(indices[i], indices[i]);
+		}
+
+		delete[] indices;
+		return avl;
+	}
+	void RandomlyClearPerfectTreeOfHeight(avl_tree<int, Tracer>& avl, size_t treeHeight) {
+		const size_t numberOfElements = (1 << treeHeight) - 1;
+		const size_t* indices = GetRandomizedArrayOfSize(numberOfElements);
+
+		for (size_t i = 0; i < numberOfElements; i++) {
+			avl.remove(indices[i]);
+		}
+
+		delete[] indices;
+	}
+	
+	avl_tree<int, Tracer> CreateRandomTreeOfSize(size_t size) {
+		avl_tree<int, Tracer> avl;
+		const size_t* indices = GetRandomizedArrayOfSize(size);
+
+		for (size_t i = 0; i < size; i++) {
+			avl.emplace(indices[i], indices[i]);
+		}
+
+		delete[] indices;
+		return avl;
+	}
+	void RandomlyClearTreeOfSize(avl_tree<int, Tracer>& avl, size_t size) {
+		const size_t* indices = GetRandomizedArrayOfSize(size);
+
+		for (size_t i = 0; i < size; i++) {
+			avl.remove(indices[i]);
+		}
+
+		delete[] indices;
+	}
+}
 namespace BSTUtilities{
-	void PushLevel(binary_search_tree<int, Tracer>& bst, size_t treeHeight, size_t level) {
-		uint32_t numberOfElementsInLevel = 1 << (treeHeight - level);;
-		uint32_t firstElementsKey = 1 << (level - 1);
-		uint32_t increment = 1 << level;
-		for (uint32_t i = 0; i < numberOfElementsInLevel; i++)
-		{
-			uint32_t key = firstElementsKey + (increment * i);
-			bst.emplace(key, key);
+	namespace {
+		void PushLevel(binary_search_tree<int, Tracer>&bst, size_t treeHeight, size_t level) {
+			uint32_t numberOfElementsInLevel = 1 << (treeHeight - level);;
+			uint32_t firstElementsKey = 1 << (level - 1);
+			uint32_t increment = 1 << level;
+			for (uint32_t i = 0; i < numberOfElementsInLevel; i++)
+			{
+				uint32_t key = firstElementsKey + (increment * i);
+				bst.emplace(key - 1, key - 1);
 #ifdef TRACE
-			std::cerr << ">>>Emplaced " << key << "\n";
+				std::cerr << ">>>Emplaced " << key << "\n";
 #endif // !TRACE
+			}
 		}
 	}
-	binary_search_tree<int, Tracer> CreatePerfectTree(int treeHeight) {
+	binary_search_tree<int, Tracer> CreatePerfectTreeOfHeight(size_t treeHeight) {
 		binary_search_tree<int, Tracer> bst;
 		for (size_t i = treeHeight; i > 0; i--)
 		{
@@ -166,23 +237,69 @@ namespace BSTUtilities{
 		}
 		return bst;
 	}
+	void RandomlyClearPerfectTreeOfHeight(binary_search_tree<int, Tracer>& bst, size_t treeHeight) {
+		size_t numberOfElements = (1 << treeHeight) - 1;
+		const size_t* indices = AVLUtilities::GetRandomizedArrayOfSize(numberOfElements);
+
+		for (size_t i = 0; i < numberOfElements; i++) {
+			bst.remove(indices[i]);
+		}
+
+		delete[] indices;
+	}
+
+	binary_search_tree<int, Tracer> CreateRandomTreeOfSize(size_t size) {
+		binary_search_tree<int, Tracer> bst;
+		const size_t* indices = AVLUtilities::GetRandomizedArrayOfSize(size);
+
+		for (size_t i = 0; i < size; i++) {
+			bst.emplace(indices[i], indices[i]);
+		}
+
+		delete[] indices;
+		return bst;
+	}
+	void RandomlyClearTreeOfSize(binary_search_tree<int, Tracer>& bst, size_t size) {
+		const size_t* indices = AVLUtilities::GetRandomizedArrayOfSize(size);
+
+		for (size_t i = 0; i < size; i++) {
+			bst.remove(indices[i]);
+		}
+
+		delete[] indices;
+	}
 }
 
-int main(int argc, char** args) {
-	constexpr size_t iter = 1000;
-	constexpr size_t size = 16;
+constexpr size_t iter = 1000;
+constexpr size_t size = 10;
 
-	unsigned int counter = 0;
+int main(int argc, char** args) {
+	srand(std::time(NULL));
+
+	for (size_t i = 0; i < iter; i++)
+	{
+		binary_search_tree<int, Tracer> bst = BSTUtilities::CreateRandomTreeOfSize(size);
+		BSTUtilities::RandomlyClearTreeOfSize(bst, size);
+	}
+
+	/*binary_search_tree<int, Tracer> bst = BSTUtilities::CreateRandomTreeOfSize(size);
+	avl_tree<int, Tracer> avl = AVLUtilities::CreateRandomTreeOfSize(size);
+
+	const size_t* randomKeyArray = AVLUtilities::GetRandomizedArrayOfSize(size);
+
 	ITERATE_TIMER_START(iter)
-	binary_search_tree<int, Tracer> bstXXL = BSTUtilities::CreatePerfectTree(size);
-	LOG("Remove 8:  " << bstXXL.remove(8))
-	LOG("Search 8:  " << bstXXL.search(8))
-	LOG("Remove 8:  " << bstXXL.remove(8))
-	LOG("Emplace 8: " << bstXXL.emplace(8, 8))
-	LOG("Search 8:  " << bstXXL.search(8))
-	LOG("Emplace 8: " << bstXXL.emplace(8, 8))
-	for (Tracer& tracer : bstXXL) {
-		counter += tracer.order;
-	};
- 	ITERATE_TIMER_END("Full Depth Search with Tree of Depth " << size)
+		const size_t index = _ITCount % size;
+		bst.search(randomKeyArray[index]);
+		bst.remove(randomKeyArray[index]);
+		bst.emplace(randomKeyArray[index], randomKeyArray[index]);
+	ITERATE_TIMER_END("Search/Remove/Insert With Random BTS of Size " << size)
+
+	ITERATE_TIMER_START(iter)
+		const size_t index = _ITCount % size;
+		avl.search(randomKeyArray[index]);
+		avl.remove(randomKeyArray[index]);
+		avl.emplace(randomKeyArray[index], randomKeyArray[index]);
+	ITERATE_TIMER_END("Search/Remove/Insert With Random AVL of Size " << size << " Using Random Insertions")
+
+	delete[] randomKeyArray;*/
 }
