@@ -153,58 +153,53 @@ public:
 	}
 
 	// Creates a node on the tree. Does a copy operation on the data.
-	bool insert(const KeyType& key, const DataType& data) {
-		Node* newNode = new Node(key, data);
-		if (root_) {
-			Node* parent = find_parent_for_key_in_subtree(key, root_);
-			if (parent) {
-				this->insert_node_at(parent, newNode);
-			}
-			else {
-				delete newNode;
-				return false;
-			}
-		}
-		else {
-			root_ = newNode;
-		}
-		return true;
-	}
+	//bool insert(const KeyType& key_, const DataType& data_) {
+	//	Node* newNode = new Node(key_, data_);
+	//	if (this->root_) {
+	//		Node* parent = find_parent_for_key_in_subtree(key_, this->root_);
+	//		if (parent) {
+	//			this->insert_node_at(parent, newNode);
+	//		}
+	//		else {
+	//			return false;
+	//		}
+	//	}
+	//	else {
+	//		this->root_ = new Node(key_, std::forward<DataType>(data_));
+	//	}
+	//	return true;
+	//}
 	// Creates a newNode on the tree. Does a move operation on the data.
-	bool insert(const KeyType& key, DataType&& data) {
-		Node* newNode = new Node(key, std::move(data));
-		if (root_) {
-			Node* parent = find_parent_for_key_in_subtree(key, root_);
+	bool insert(const KeyType& key_, DataType&& data_) {
+		if (this->root_) {
+			Node* parent = find_parent_for_key_in_subtree(key_, this->root_);
 			if (parent) {
-				this->insert_node_at(parent, newNode);
+				this->insert_node_at(parent, new Node(key_, std::forward<DataType>(data_)));
 			}
 			else {
-				delete newNode;
 				return false;
 			}
 		}
 		else {
-			root_ = newNode;
+			this->root_ = new Node(key_, std::forward<DataType>(data_));
 		}
 		return true;
 	}
 	// Creates a newNode on the tree. Constructs the DataType object in place (avoids copy/move operations).
 	// @param[...args] args are passed to the DataType constructor.
 	template <typename... ArgTypes>
-	bool emplace(const KeyType key, ArgTypes... args) {
-		Node* newNode = new Node(key, std::forward<ArgTypes>(args)...);
-		if (root_) {
-			Node* parent = find_parent_for_key_in_subtree(key, root_);
+	bool emplace(const KeyType& key_, ArgTypes... args) {
+		if (this->root_) {
+			Node* parent = find_parent_for_key_in_subtree(key_, this->root_);
 			if (parent) {
-				this->insert_node_at(parent, newNode);
+				this->insert_node_at(parent, new Node(key_, std::forward<ArgTypes>(args)...));
 			}
 			else {
-				delete newNode;
 				return false;
 			}
 		}
 		else {
-			root_ = newNode;
+			this->root_ = new Node(key_, std::forward<ArgTypes>(args)...);
 		}
 		return true;
 	}
@@ -215,11 +210,23 @@ public:
 
 		if (node) {
 			Node*& parentsCorrectPointer = (node->key < node->parent_->key) ? node->parent_->left_ : node->parent_->right_;
-			if (!(node->left_ || node->right_)) { //HEIGHT OF node->parent_ AND UPPER REDUCED BY 1
+			if (!(node->left_ || node->right_)) {
 				parentsCorrectPointer = nullptr; 
 				delete node;
 			}
-			else if (node->left_ && node->right_) { //HEIGHT OF carryNode->parent_  AND UPPER REDUCED BY 1
+			else  if (!node->left_ != !node->right_) {
+				if (node->left_) {
+					parentsCorrectPointer = node->left_;
+					node->left_->parent_ = node->parent_;
+					delete node;
+				}
+				else {
+					parentsCorrectPointer = node->right_;
+					node->right_->parent_ = node->parent_;
+					delete node;
+				}
+			}
+			else if (node->left_ && node->right_) {
 				Node* carryNode = find_max_in_subtree(node->left_);
 				node->key = std::move(carryNode->key);
 				node->data = std::move(carryNode->data);
@@ -231,18 +238,6 @@ public:
 					carryNode->parent_->right_ = nullptr;
 				}
 				delete carryNode;
-			}
-			else { //HEIGHT OF node->parent_ AND UPPER REDUCED BY 1
-				if (node->left_) {
-					parentsCorrectPointer = node->left_;
-					node->left_->parent_ = node->parent_;
-					delete node;
-				}
-				else {
-					parentsCorrectPointer = node->right_;
-					node->right_->parent_ = node->parent_;
-					delete node;
-				}
 			}
 			return true;
 		}
