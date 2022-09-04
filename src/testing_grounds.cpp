@@ -9,10 +9,14 @@
 #include <ctime>
 
 #define TIMER_START {auto _TStartTime = std::chrono::high_resolution_clock::now();
-#define TIMER_END(timerName) auto _TCurrentTime = std::chrono::high_resolution_clock::now(); std::cerr << "<<< [" << timerName << "] ran for: " << (_TCurrentTime - _TStartTime) << " >>>\n";}
+#define TIMER_END(timerName) auto _TCurrentTime = std::chrono::high_resolution_clock::now(); std::cerr << "[" << timerName << "]\nRan for: " << (_TCurrentTime - _TStartTime) << " \n\n";}
 
-#define ITERATE_TIMER_START(_ITNumberOfIterations) { unsigned int _ITIterationCount = _ITNumberOfIterations; unsigned long long _ITTotalTime = 0; for (size_t _ITCount = 0; _ITCount < _ITIterationCount; _ITCount++) { auto _ITStartTime = std::chrono::high_resolution_clock::now();
-#define ITERATE_TIMER_END(_ITTimerName) auto _ITCurrentTime = std::chrono::high_resolution_clock::now(); _ITTotalTime += (_ITCurrentTime - _ITStartTime).count();} std::cerr << "<<< [" << _ITTimerName << "] ran for an average of: " << (_ITTotalTime / _ITIterationCount) << "ns >>>\n";}
+#define HEADLESS_ITERATE_TIMER_START(_ITNumberOfIterations) { unsigned int _ITIterationCount = _ITNumberOfIterations; unsigned long long _ITTotalTime = 0; for (size_t _ITCount = 0; _ITCount < _ITIterationCount; _ITCount++) { auto _ITStartTime = std::chrono::high_resolution_clock::now();
+#define HEADLESS_ITERATE_TIMER_END(_ITTimerName) auto _ITCurrentTime = std::chrono::high_resolution_clock::now(); _ITTotalTime += (_ITCurrentTime - _ITStartTime).count();} std::cerr << "[" << _ITTimerName << "]\nRan for an average of: " << (_ITTotalTime / _ITIterationCount) << "ns\n\n";}
+
+#define ITERATE_TIMER_START(_ITNumberOfIterations) { unsigned int _ITIterationCount = _ITNumberOfIterations; unsigned long long _ITTotalTime = 0; for (size_t _ITCount = 0; _ITCount < _ITIterationCount; _ITCount++) { 
+#define ITERATE_TIMER_HEADER_END auto _ITStartTime = std::chrono::high_resolution_clock::now();
+#define ITERATE_TIMER_END(_ITTimerName) auto _ITCurrentTime = std::chrono::high_resolution_clock::now(); _ITTotalTime += (_ITCurrentTime - _ITStartTime).count();} std::cerr << "[" << _ITTimerName << "]\nRan for an average of: " << (_ITTotalTime / _ITIterationCount) << "ns\n\n";}
 
 #define LOG(msg) std::cerr << msg << "\n";
 
@@ -270,36 +274,51 @@ namespace BSTUtilities{
 	}
 }
 
-constexpr size_t iter = 1000;
-constexpr size_t size = 10;
+constexpr size_t size = 10000;
 
 int main(int argc, char** args) {
 	srand(std::time(NULL));
 
-	for (size_t i = 0; i < iter; i++)
+	//Leak Tests
 	{
-		binary_search_tree<int, Tracer> bst = BSTUtilities::CreateRandomTreeOfSize(size);
-		BSTUtilities::RandomlyClearTreeOfSize(bst, size);
+		size_t iter = 10000;
+		size_t size = 50000;
+
+		HEADLESS_ITERATE_TIMER_START(iter)
+			binary_search_tree<int, Tracer> bst = BSTUtilities::CreateRandomTreeOfSize(size);
+			BSTUtilities::RandomlyClearTreeOfSize(bst, size);
+		HEADLESS_ITERATE_TIMER_END("BST Leak Test: Randomly Create then Clear Tree of Size " << size)
+		HEADLESS_ITERATE_TIMER_START(iter)
+			avl_tree<int, Tracer> avl = AVLUtilities::CreateRandomTreeOfSize(size);
+		AVLUtilities::RandomlyClearTreeOfSize(avl, size);
+		HEADLESS_ITERATE_TIMER_END("AVL Leak Test: Randomly Create then Clear Tree of Size " << size)
 	}
 
-	/*binary_search_tree<int, Tracer> bst = BSTUtilities::CreateRandomTreeOfSize(size);
-	avl_tree<int, Tracer> avl = AVLUtilities::CreateRandomTreeOfSize(size);
+	//Operation Time Complexity Tests
+	{
+		size_t iter = 10000;
+		size_t size = 50000;
 
-	const size_t* randomKeyArray = AVLUtilities::GetRandomizedArrayOfSize(size);
-
-	ITERATE_TIMER_START(iter)
-		const size_t index = _ITCount % size;
-		bst.search(randomKeyArray[index]);
-		bst.remove(randomKeyArray[index]);
-		bst.emplace(randomKeyArray[index], randomKeyArray[index]);
-	ITERATE_TIMER_END("Search/Remove/Insert With Random BTS of Size " << size)
-
-	ITERATE_TIMER_START(iter)
-		const size_t index = _ITCount % size;
-		avl.search(randomKeyArray[index]);
-		avl.remove(randomKeyArray[index]);
-		avl.emplace(randomKeyArray[index], randomKeyArray[index]);
-	ITERATE_TIMER_END("Search/Remove/Insert With Random AVL of Size " << size << " Using Random Insertions")
-
-	delete[] randomKeyArray;*/
+		const size_t* randomKeyArray = AVLUtilities::GetRandomizedArrayOfSize(size);
+		ITERATE_TIMER_START(iter)
+			delete[] randomKeyArray;
+			binary_search_tree<int, Tracer> bst = BSTUtilities::CreateRandomTreeOfSize(size);
+			randomKeyArray = AVLUtilities::GetRandomizedArrayOfSize(size);
+		ITERATE_TIMER_HEADER_END
+			const size_t index = _ITCount % size;
+			bst.search(randomKeyArray[index]);
+			bst.remove(randomKeyArray[index]);
+			bst.emplace(randomKeyArray[index], randomKeyArray[index]);
+		ITERATE_TIMER_END("BST Operation Time Complexity Test: Search/Remove/Insert To Random Tree of Size " << size)
+		ITERATE_TIMER_START(iter)
+			delete[] randomKeyArray;
+			avl_tree<int, Tracer> avl = AVLUtilities::CreateRandomTreeOfSize(size);
+			randomKeyArray = AVLUtilities::GetRandomizedArrayOfSize(size);
+		ITERATE_TIMER_HEADER_END
+			const size_t index = _ITCount % size;
+			avl.search(randomKeyArray[index]);
+			avl.remove(randomKeyArray[index]);
+			avl.emplace(randomKeyArray[index], randomKeyArray[index]);
+		ITERATE_TIMER_END("AVL Operation Time Complexity Test: Search/Remove/Insert To Random Tree of Size " << size)
+	}
 }

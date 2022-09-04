@@ -152,23 +152,22 @@ public:
 		}
 	}
 
-	// @return false if key is already in tree.
-	//bool insert(const KeyType& key_, const DataType& data_) {
-	//	Node* newNode = new Node(key_, data_);
-	//	if (this->root_) {
-	//		Node* parent = find_parent_for_key_in_subtree(key_, this->root_);
-	//		if (parent) {
-	//			this->insert_node_at(parent, newNode);
-	//		}
-	//		else {
-	//			return false;
-	//		}
-	//	}
-	//	else {
-	//		this->root_ = new Node(key_, std::forward<DataType>(data_));
-	//	}
-	//	return true;
-	//}
+	//@return false if key is already in tree.
+	bool insert(const KeyType& key_, const DataType& data_) {
+		if (this->root_) {
+			Node* parent = find_parent_for_key_in_subtree(key_, this->root_);
+			if (parent) {
+				this->insert_node_at(parent, new Node(key_, std::move(data_)));
+			}
+			else {
+				return false;
+			}
+		}
+		else {
+			this->root_ = new Node(key_, std::move(data_));
+		}
+		return true;
+	}
 	bool insert(const KeyType& key_, DataType&& data_) {
 		if (this->root_) {
 			Node* parent = find_parent_for_key_in_subtree(key_, this->root_);
@@ -202,15 +201,15 @@ public:
 	}
 
 	// @return false if key is not present in the tree.
-	bool remove(const KeyType& key) {
-		Node* node = this->search(key);
+	bool remove(const KeyType& key_) {
+		Node* node = this->search(key_);
 
 		if (node) {
 			if (node != this->root_) {
 				if (!(node->left_ || node->right_)) {
 					Node*& parentsCorrectPointer = (node->key < node->parent_->key) ? node->parent_->left_ : node->parent_->right_;
 					parentsCorrectPointer = nullptr;
-					balance_parents_after_remove(node->parent_, key);
+					balance_parents_after_remove(node->parent_, key_);
 					delete node;
 				}
 				else  if (!node->left_ != !node->right_) {
@@ -218,13 +217,13 @@ public:
 					if (node->left_) {
 						parentsCorrectPointer = node->left_;
 						node->left_->parent_ = node->parent_;
-						balance_parents_after_remove(node->parent_, key);
+						balance_parents_after_remove(node->parent_, key_);
 						delete node;
 					}
 					else {
 						parentsCorrectPointer = node->right_;
 						node->right_->parent_ = node->parent_;
-						balance_parents_after_remove(node->parent_, key);
+						balance_parents_after_remove(node->parent_, key_);
 						delete node;
 					}
 				}

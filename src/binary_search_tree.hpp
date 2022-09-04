@@ -153,35 +153,34 @@ public:
 	}
 
 	// Creates a node on the tree. Does a copy operation on the data.
-	//bool insert(const KeyType& key_, const DataType& data_) {
-	//	Node* newNode = new Node(key_, data_);
-	//	if (this->root_) {
-	//		Node* parent = find_parent_for_key_in_subtree(key_, this->root_);
-	//		if (parent) {
-	//			this->insert_node_at(parent, newNode);
-	//		}
-	//		else {
-	//			return false;
-	//		}
-	//	}
-	//	else {
-	//		this->root_ = new Node(key_, std::forward<DataType>(data_));
-	//	}
-	//	return true;
-	//}
-	// Creates a newNode on the tree. Does a move operation on the data.
-	bool insert(const KeyType& key_, DataType&& data_) {
+	bool insert(const KeyType& key_, const DataType& data_) {
 		if (this->root_) {
 			Node* parent = find_parent_for_key_in_subtree(key_, this->root_);
 			if (parent) {
-				this->insert_node_at(parent, new Node(key_, std::forward<DataType>(data_)));
+				this->insert_node_at(parent, new Node(key_, data_));
 			}
 			else {
 				return false;
 			}
 		}
 		else {
-			this->root_ = new Node(key_, std::forward<DataType>(data_));
+			this->root_ = new Node(key_, data_);
+		}
+		return true;
+	}
+	// Creates a newNode on the tree. Does a move operation on the data.
+	bool insert(const KeyType& key_, DataType&& data_) {
+		if (this->root_) {
+			Node* parent = find_parent_for_key_in_subtree(key_, this->root_);
+			if (parent) {
+				this->insert_node_at(parent, new Node(key_, std::move(data_)));
+			}
+			else {
+				return false;
+			}
+		}
+		else {
+			this->root_ = new Node(key_, std::move<DataType>(data_));
 		}
 		return true;
 	}
@@ -205,39 +204,75 @@ public:
 	}
 
 	// Removes an element from the tree and calls the destructor on its data.
-	bool remove(const KeyType& key) {
-		Node* node = this->search(key);
+	bool remove(const KeyType& key_) {
+		Node* node = this->search(key_);
 
 		if (node) {
-			Node*& parentsCorrectPointer = (node->key < node->parent_->key) ? node->parent_->left_ : node->parent_->right_;
-			if (!(node->left_ || node->right_)) {
-				parentsCorrectPointer = nullptr; 
-				delete node;
-			}
-			else  if (!node->left_ != !node->right_) {
-				if (node->left_) {
-					parentsCorrectPointer = node->left_;
-					node->left_->parent_ = node->parent_;
+			if (node != this->root_) {
+				if (!(node->left_ || node->right_)) {
+					Node*& parentsCorrectPointer = (node->key < node->parent_->key) ? node->parent_->left_ : node->parent_->right_;
+					parentsCorrectPointer = nullptr;
 					delete node;
 				}
-				else {
-					parentsCorrectPointer = node->right_;
-					node->right_->parent_ = node->parent_;
-					delete node;
+				else  if (!node->left_ != !node->right_) {
+					Node*& parentsCorrectPointer = (node->key < node->parent_->key) ? node->parent_->left_ : node->parent_->right_;
+					if (node->left_) {
+						parentsCorrectPointer = node->left_;
+						node->left_->parent_ = node->parent_;
+						delete node;
+					}
+					else {
+						parentsCorrectPointer = node->right_;
+						node->right_->parent_ = node->parent_;
+						delete node;
+					}
+				}
+				else if (node->left_ && node->right_) {
+					Node* replacementNode = find_max_in_subtree(node->left_);
+					Node*& parentsCorrectPointer = (replacementNode->key < replacementNode->parent_->key) ? replacementNode->parent_->left_ : replacementNode->parent_->right_;
+					node->key = std::move(replacementNode->key);
+					node->data = std::move(replacementNode->data);
+					if (replacementNode->left_) {
+						replacementNode->left_->parent_ = replacementNode->parent_;
+						parentsCorrectPointer = replacementNode->left_;
+					}
+					else {
+						parentsCorrectPointer = nullptr;
+					}
+					delete replacementNode;
 				}
 			}
-			else if (node->left_ && node->right_) {
-				Node* carryNode = find_max_in_subtree(node->left_);
-				node->key = std::move(carryNode->key);
-				node->data = std::move(carryNode->data);
-				if (carryNode->left_) {
-					carryNode->left_->parent_ = carryNode->parent_;
-					carryNode->parent_->right_ = carryNode->left_;
+			else {
+				if (!(node->left_ || node->right_)) {
+					this->root_ = nullptr;
+					delete node;
 				}
-				else {
-					carryNode->parent_->right_ = nullptr;
+				else  if (!node->left_ != !node->right_) {
+					if (node->left_) {
+						this->root_ = node->left_;
+						root_->parent_ = nullptr;
+						delete node;
+					}
+					else {
+						this->root_ = node->right_;
+						root_->parent_ = nullptr;
+						delete node;
+					}
 				}
-				delete carryNode;
+				else if (node->left_ && node->right_) {
+					Node* replacementNode = find_max_in_subtree(node->left_);
+					Node*& parentsCorrectPointer = (replacementNode->key < replacementNode->parent_->key) ? replacementNode->parent_->left_ : replacementNode->parent_->right_;
+					node->key = std::move(replacementNode->key);
+					node->data = std::move(replacementNode->data);
+					if (replacementNode->left_) {
+						replacementNode->left_->parent_ = replacementNode->parent_;
+						parentsCorrectPointer = replacementNode->left_;
+					}
+					else {
+						parentsCorrectPointer = nullptr;
+					}
+					delete replacementNode;
+				}
 			}
 			return true;
 		}
