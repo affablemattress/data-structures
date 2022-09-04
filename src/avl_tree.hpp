@@ -91,6 +91,61 @@ public:
 		return temp;
 	}
 
+	Iterator& operator--() {
+		if (!ptr_) {
+			return (*this);
+		}
+
+		if (ptr_->left_) {
+			ptr_ = ptr_->left_;
+			while (ptr_->right_) {
+				ptr_ = ptr_->right_;
+			}
+			return *this;
+		}
+
+		while (ptr_->parent_) {
+			if (ptr_->key > ptr_->parent_->key) {
+				ptr_ = ptr_->parent_;
+				return *this;
+			}
+			else {
+				ptr_ = ptr_->parent_;
+			}
+		}
+
+		ptr_ = nullptr;
+		return *this;
+	}
+	Iterator operator--(int) {
+		Iterator temp = *this;
+		++(*this);
+		if (!temp.ptr_) {
+			return (temp);
+		}
+
+		if (temp.ptr_->left_) {
+			temp.ptr_ = temp.ptr_->left_;
+			while (temp.ptr_->right_) {
+				temp.ptr_ = temp.ptr_->right_;
+			}
+			return temp;
+		}
+
+		while (temp.ptr_->parent_) {
+			if (temp.ptr_->key > temp.ptr_->parent_->key) {
+				temp.ptr_ = temp.ptr_->parent_;
+				return temp;
+			}
+			else {
+				temp.ptr_ = temp.ptr_->parent_;
+			}
+		}
+
+		temp.ptr_ = nullptr;
+		return temp;
+	}
+
 	DataType* operator->() {
 		return this->ptr_->data;
 	}

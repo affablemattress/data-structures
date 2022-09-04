@@ -281,8 +281,8 @@ int main(int argc, char** args) {
 
 	//Leak Tests
 	{
-		size_t iter = 10000;
-		size_t size = 50000;
+		size_t iter = 1000;
+		size_t size = 100000;
 
 		HEADLESS_ITERATE_TIMER_START(iter)
 			binary_search_tree<int, Tracer> bst = BSTUtilities::CreateRandomTreeOfSize(size);
@@ -296,7 +296,7 @@ int main(int argc, char** args) {
 
 	//Operation Time Complexity Tests
 	{
-		size_t iter = 10000;
+		size_t iter = 1000;
 		size_t size = 50000;
 
 		const size_t* randomKeyArray = AVLUtilities::GetRandomizedArrayOfSize(size);
