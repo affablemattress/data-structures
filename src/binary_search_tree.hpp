@@ -1,7 +1,10 @@
 #pragma once
 #include <concepts>
+#include <vector>
 #include <utility>
 #include <stdexcept>
+
+
 
 // <<<-------------------------------------------------->>>
 // <<<----------- Class forward declarations ----------->>>
@@ -20,7 +23,8 @@ template<typename KeyType, typename DataType>
 class binary_search_tree;
 
 
-// An in-order traversal forward iterator.
+
+// An in-order traversal two way iterator.
 // end() iterator is nullptr.
 template<typename KeyType, typename DataType>
 	requires (std::totally_ordered<KeyType> && std::copyable<KeyType>
@@ -208,6 +212,7 @@ public:
 	}
 
 	// Creates a node on the tree. Does a copy operation on the data.
+	// @return false if key is already in tree.
 	bool insert(const KeyType& key_, const DataType& data_) {
 		if (this->root_) {
 			Node* parent = find_parent_for_key_in_subtree(key_, this->root_);
@@ -224,6 +229,7 @@ public:
 		return true;
 	}
 	// Creates a newNode on the tree. Does a move operation on the data.
+	// @return false if key is already in tree.
 	bool insert(const KeyType& key_, DataType&& data_) {
 		if (this->root_) {
 			Node* parent = find_parent_for_key_in_subtree(key_, this->root_);
@@ -241,6 +247,7 @@ public:
 	}
 	// Creates a newNode on the tree. Constructs the DataType object in place (avoids copy/move operations).
 	// @param[...args] args are passed to the DataType constructor.
+	// @return false if key is already in tree.
 	template <typename... ArgTypes>
 	bool emplace(const KeyType& key_, ArgTypes... args) {
 		if (this->root_) {
@@ -258,7 +265,8 @@ public:
 		return true;
 	}
 
-	// Removes an element from the tree and calls the destructor on its data.
+	// Removes an element from the tree and calls the destructor on its data. 
+	// If the removed element has 2 children, copies the max() in left subtree to the element's place then deletes the original copy.
 	bool remove(const KeyType& key_) {
 		Node* node = this->search(key_);
 
@@ -335,11 +343,19 @@ public:
 			return false;
 		}
 	}
+
 	// Removes all elements from the tree.
 	void clear() {
-		if (this->root_)
-			clear_subtree(this->root_);
-			this->root_ = nullptr;
+		if (this->root_) {
+			std::vector<Node*> allNodes;
+			for (Node& node : *this) {
+				allNodes.push_back(&node);
+			}
+			for (Node* node : allNodes) {
+				delete node;
+			}
+		}
+		this->root_ = nullptr;
 	}
 
 	Node* min() {
@@ -360,14 +376,14 @@ public:
 		}
 	}
 
-	// @return An in-order traversal forward iterator pointing at the smallest element of the tree.
+	// @return An in-order traversal iterator pointing at the smallest element of the tree.
 	Iterator begin() {
 		if (!this->root_) {
-			return Iterator(nullptr);
+			return this->end();
 		}
 		return Iterator(this->min());
 	}   
-	// @return An in-order traversal forward iterator pointing at nullptr.
+	// @return An in-order traversal iterator pointing at nullptr.
 	Iterator end() {
 		return Iterator(nullptr);
 	}
@@ -399,7 +415,7 @@ public:
 	binary_search_tree()
 		: root_(nullptr) {}
 private:
-	// Recursive method that searches a subtree for a suitable parent to attach the passed key to.
+	// Tail recursive method that searches a subtree for a suitable parent to attach the passed key to.
 	// Used by insert() and emplace() methods.
 	// @return nullptr if key is already in the tree.
 	static Node* find_parent_for_key_in_subtree(const KeyType& key, Node* node) {
@@ -423,7 +439,8 @@ private:
 			}
 		}
 	}
-	// Inserts an existing node into the tree. 
+
+	// Inserts the node into the tree at the specified parent. 
 	static void insert_node_at(Node* parent, Node* node) {
 		node->parent_ = parent;
 		if (node->key < parent->key) {
@@ -449,7 +466,7 @@ private:
 		return largestNode;
 	}
 
-	// Recursive method that searches a subtree for key.
+	// Tail recursive method that searches a subtree for key.
 	// Used by search() and remove() methods.
 	// @return nullptr if key is not present in the tree.
 	static Node* search_subtree(const KeyType& key, Node* node) {
@@ -473,16 +490,9 @@ private:
 			return node;
 		}
 	}
-	// Recursive method that clears a subtree. 
-	// Used by clear() method.
-	static void clear_subtree(Node* node) {
-		if (node->left_)
-			clear_subtree(node->left_);
-		if (node->right_)
-			clear_subtree(node->right_);
-		delete node;
-	}
+
 	// Recursive method that copies a subtree to destination. 
+	// May overflow the stack if used on trees too big. Too bad.
 	// Used by the copy constructor and the copy assign operator.
 	static void clone_subtree(Node* destinationParent, Node*& destination, Node*& source) {
 		destination = new Node(*source);

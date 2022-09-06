@@ -158,7 +158,7 @@ namespace AVLUtilities {
 		for (size_t i = 0; i < size; i++) {
 			array[i] = i;
 		}
-		for (size_t i = 0; i < size * 3; i++) {
+		for (size_t i = 0; i < size; i++) {
 			const size_t firstIndex = rand() % size;
 			size_t first = array[firstIndex];
 			size_t secondIndex = rand() % size;
@@ -281,41 +281,43 @@ int main(int argc, char** args) {
 
 	//Leak Tests
 	{
-		size_t iter = 1000;
-		size_t size = 100000;
+		size_t iter = 100;
+		size_t size = 1000;
 
 		HEADLESS_ITERATE_TIMER_START(iter)
 			binary_search_tree<int, Tracer> bst = BSTUtilities::CreateRandomTreeOfSize(size);
 			BSTUtilities::RandomlyClearTreeOfSize(bst, size);
 		HEADLESS_ITERATE_TIMER_END("BST Leak Test: Randomly Create then Clear Tree of Size " << size)
+
 		HEADLESS_ITERATE_TIMER_START(iter)
 			avl_tree<int, Tracer> avl = AVLUtilities::CreateRandomTreeOfSize(size);
-		AVLUtilities::RandomlyClearTreeOfSize(avl, size);
+			AVLUtilities::RandomlyClearTreeOfSize(avl, size);
 		HEADLESS_ITERATE_TIMER_END("AVL Leak Test: Randomly Create then Clear Tree of Size " << size)
 	}
 
 	//Operation Time Complexity Tests
 	{
 		size_t iter = 1000;
-		size_t size = 50000;
+		size_t size = 25000;
 
 		const size_t* randomKeyArray = AVLUtilities::GetRandomizedArrayOfSize(size);
 		ITERATE_TIMER_START(iter)
 			delete[] randomKeyArray;
 			binary_search_tree<int, Tracer> bst = BSTUtilities::CreateRandomTreeOfSize(size);
 			randomKeyArray = AVLUtilities::GetRandomizedArrayOfSize(size);
-		ITERATE_TIMER_HEADER_END
 			const size_t index = _ITCount % size;
+		ITERATE_TIMER_HEADER_END
 			bst.search(randomKeyArray[index]);
 			bst.remove(randomKeyArray[index]);
 			bst.emplace(randomKeyArray[index], randomKeyArray[index]);
 		ITERATE_TIMER_END("BST Operation Time Complexity Test: Search/Remove/Insert To Random Tree of Size " << size)
+
 		ITERATE_TIMER_START(iter)
 			delete[] randomKeyArray;
 			avl_tree<int, Tracer> avl = AVLUtilities::CreateRandomTreeOfSize(size);
 			randomKeyArray = AVLUtilities::GetRandomizedArrayOfSize(size);
-		ITERATE_TIMER_HEADER_END
 			const size_t index = _ITCount % size;
+		ITERATE_TIMER_HEADER_END
 			avl.search(randomKeyArray[index]);
 			avl.remove(randomKeyArray[index]);
 			avl.emplace(randomKeyArray[index], randomKeyArray[index]);

@@ -4,6 +4,8 @@
 #include <cstdint>
 #include <stdexcept>
 
+
+
 // <<<-------------------------------------------------->>>
 // <<<----------- Class forward declarations ----------->>>
 // <<<-------------------------------------------------->>>
@@ -20,7 +22,9 @@ template<typename KeyType, typename DataType>
 			  && std::copyable<DataType>)
 class avl_tree;
 
-// An in-order traversal forward iterator.
+
+
+// An in-order traversal two way iterator.
 // end() iterator is nullptr.
 template<typename KeyType, typename DataType>
 	requires (std::totally_ordered<KeyType>&& std::copyable<KeyType>
@@ -186,10 +190,11 @@ private:
 	Node* right_ = nullptr;
 };
 
-// EXPLANATIONEXPLANATIONEXPLANATIONEXPLANATIONEXPLANATION
-// EXPLANATIONEXPLANATIONEXPLANATIONEXPLANATIONEXPLANATION
-// EXPLANATIONEXPLANATIONEXPLANATIONEXPLANATIONEXPLANATION
-// EXPLANATIONEXPLANATIONEXPLANATIONEXPLANATIONEXPLANATION
+// An AVL tree implementation.
+// The key is a seperate member from the data, this means the DataType 
+// doesn't have to have comparison operators implemented.
+// KeyType must be copyable and totally_ordered.
+// DataType must be copyable.
 template<typename KeyType, typename DataType>
 	requires (std::totally_ordered<KeyType>&& std::copyable<KeyType>
 			  && std::copyable<DataType>)
@@ -207,7 +212,8 @@ public:
 		}
 	}
 
-	//@return false if key is already in tree.
+	// Creates a node on the tree. Does a copy operation on the data.
+	// @return false if key is already in tree.
 	bool insert(const KeyType& key_, const DataType& data_) {
 		if (this->root_) {
 			Node* parent = find_parent_for_key_in_subtree(key_, this->root_);
@@ -223,6 +229,8 @@ public:
 		}
 		return true;
 	}
+	// Creates a newNode on the tree. Does a move operation on the data.
+	// @return false if key is already in tree.
 	bool insert(const KeyType& key_, DataType&& data_) {
 		if (this->root_) {
 			Node* parent = find_parent_for_key_in_subtree(key_, this->root_);
@@ -238,6 +246,9 @@ public:
 		}
 		return true;
 	}
+	// Creates a newNode on the tree. Constructs the DataType object in place (avoids copy/move operations).
+	// @param[...args] args are passed to the DataType constructor.
+	// @return false if key is already in tree.
 	template <typename... ArgTypes>
 	bool emplace(const KeyType key_, ArgTypes... args) {
 		if (this->root_) {
@@ -255,7 +266,9 @@ public:
 		return true;
 	}
 
-	// @return false if key is not present in the tree.
+	// Removes an element from the tree and calls the destructor on its data. 
+	// If the removed element has 2 children, copies the max() in left subtree to the element's place then deletes the original copy.
+	// Then does the rebalancing.
 	bool remove(const KeyType& key_) {
 		Node* node = this->search(key_);
 
@@ -337,10 +350,19 @@ public:
 			return false;
 		}
 	}
+
+	// Removes all elements from the tree.
 	void clear() {
-		if (this->root_)
-			clear_subtree(this->root_);
-		this->root_ = nullptr;
+		if (this->root_) {
+			std::vector<Node*> allNodes;
+			for (Node& node : *this) {
+				allNodes.push_back(&node);
+			}
+			for (Node* node : allNodes) {
+				delete node;
+			}
+			this->root_ = nullptr;
+		}
 	}
 	
 	Node* min() {
@@ -361,17 +383,19 @@ public:
 		}
 	}
 
+	// @return An in-order traversal iterator pointing at the smallest element of the tree.
 	Iterator begin() {
 		if (!this->root_) {
-			return Iterator(nullptr);
+			return this->end();
 		}
 		return Iterator(this->min());
 	}
+	// @return An in-order traversal iterator pointing at nullptr.
 	Iterator end() {
 		return Iterator(nullptr);
 	}
 
-	avl_tree(avl_tree& other) {
+	avl_tree(const avl_tree& other) {
 		this->root_ = nullptr;
 		if (other.root_)
 			clone_subtree(nullptr, this->root_, other.root_);
@@ -572,6 +596,7 @@ private:
 
 		return true;
 	}
+	// Decides which rotation to do depending on the balance factors of the root and its children.
 	bool decide_and_do_rotation(Node* root) {
 		if (root->balanceFactor_ == -2) {
 			if (root->right_->balanceFactor_ == 1) {
@@ -591,6 +616,7 @@ private:
 		}
 	}
 
+	// Tail recursive method that balances all parents of the inserted node.
 	void balance_parents_after_insert(Node* parent, const KeyType& insertedKey) {
 		const int bfChange = (insertedKey < parent->key) ? 1 : -1; // If insert was to the left root bfChange = +1 else -1
 		parent->balanceFactor_ += bfChange;
@@ -606,6 +632,7 @@ private:
 			}
 		}
 	}
+	// Tail recursive method that balances all parents of the removed node.
 	void balance_parents_after_remove(Node* parent, const KeyType& removedKey) {
 		const int bfChange = (removedKey <= parent->key) ? -1 : 1; // If pivot is left of root BF change = -1 else +1
 		parent->balanceFactor_ += bfChange;
@@ -627,6 +654,7 @@ private:
 		}
 	}
 
+	// Inserts the node into the tree at the specified parent and does the rebalancing.
 	void insert_node_at(Node* parent, Node* node) {
 		node->parent_ = parent;
 		if (node->key < parent->key) {
@@ -676,6 +704,8 @@ private:
 		return largestNode;
 	}
 
+	// Tail recursive method that searches a subtree for key.
+	// Used by search() and remove() methods.
 	// @return nullptr if key is not present in the tree.
 	static Node* search_subtree(const KeyType& key, Node* node) {
 		if (key < node->key) {
@@ -698,13 +728,10 @@ private:
 			return node;
 		}
 	}
-	static void clear_subtree(Node* root) {
-		if (root->left_)
-			clear_subtree(root->left_);
-		if (root->right_)
-			clear_subtree(root->right_);
-		delete root;
-	}
+
+	// Recursive method that copies a subtree to destination. 
+	// May overflow the stack if used on trees too big. Too bad.
+	// Used by the copy constructor and the copy assign operator.
 	static void clone_subtree(Node* destinationParent, Node*& destination, Node*& source) {
 		destination = new Node(*source);
 		destination->parent_ = destinationParent;
