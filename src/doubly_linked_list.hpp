@@ -416,9 +416,9 @@ public:
 			}
 			delete nextPtr;
 
+			this->size_ = 0;
 			this->head_ = nullptr;
 			this->tail_ = nullptr;
-			this->size_ = 0;
 		}
 	}
 
@@ -434,12 +434,58 @@ public:
 		return Iterator(nullptr);
 	}
 
-	doubly_linked_list(const doubly_linked_list& other) {}
-	doubly_linked_list& operator=(const doubly_linked_list& other) {}
+	doubly_linked_list(const doubly_linked_list& other) {
+		this->size_ = other.size_;
+		if (other.size_ == 0) {
+			return;
+		}
+		else if (other.size_ == 1) {
+			Node* newNode = new Node(other.head_);
+			this->head_ = newNode;
+			this->tail_ = newNode;
+		}
+		else {
+			Node* currentNode = new Node(other.head_); 
+			Node* newNode = nullptr;
+			this->head_ = currentNode;
+			for (Node* iterNode = other.head_->next_; iterNode != nullptr; iterNode = iterNode->next_) {
+				newNode = new Node(iterNode);
+				currentNode->next_ = newNode;
+				newNode->previous_ = currentNode;
+				currentNode = newNode;
+			}
+			this->tail_ = currentNode;
+		}
+	}
+	doubly_linked_list& operator=(const doubly_linked_list& other) {
+		this->clear();
+		this->size_ = other.size_;
+		if (other.size_ == 0) {
+			return;
+		}
+		else if (other.size_ == 1) {
+			Node* newNode = new Node(other.head_);
+			this->head_ = newNode;
+			this->tail_ = newNode;
+		}
+		else {
+			Node* currentNode = new Node(other.head_);
+			Node* newNode = nullptr;
+			this->head_ = currentNode;
+			for (Node* iterNode = other.head_->next_; iterNode != nullptr; iterNode = iterNode->next_) {
+				newNode = new Node(iterNode);
+				currentNode->next_ = newNode;
+				newNode->previous_ = currentNode;
+				currentNode = newNode;
+			}
+			this->tail_ = currentNode;
+		}
+	}
 	doubly_linked_list(doubly_linked_list&& other) {
 		this->size_ = other.size_;
 		this->head_ = other.head_;
 		this->tail_ = other.tail_;
+		other.size_ = 0;
 		other.head_ = nullptr;
 		other.tail_ = nullptr;
 	}
@@ -448,6 +494,7 @@ public:
 		this->size_ = other.size_;
 		this->head_ = other.head_;
 		this->tail_ = other.tail_;
+		other.size_ = 0;
 		other.head_ = nullptr;
 		other.tail_ = nullptr;
 	}
