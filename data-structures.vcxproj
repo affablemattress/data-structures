@@ -93,6 +93,7 @@
   <ItemGroup>
     <ClInclude Include="src\avl_tree.hpp" />
     <ClInclude Include="src\binary_search_tree.hpp" />
+    <ClInclude Include="src\doubly_linked_list.hpp" />
     <ClInclude Include="src\tracked_array.hpp" />
   </ItemGroup>
   <ItemGroup>

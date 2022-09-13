@@ -2,7 +2,6 @@
 #include <concepts>
 #include <utility>
 #include <cstdint>
-#include <stdexcept>
 
 
 
@@ -150,15 +149,17 @@ public:
 		return temp;
 	}
 
-	DataType* operator->() {
-		return this->ptr_->data;
+	Node* operator->() {
+		return this->ptr_;
 	}
-	DataType& operator*() {
-		return this->ptr_->data;
+	Node& operator*() {
+		return *(this->ptr_);
 	}
 
 	avl_tree_iterator(Node* node)
 		: ptr_(node) {}
+
+	friend avl_tree<KeyType, DataType>;
 private:
 	Node* ptr_;
 };

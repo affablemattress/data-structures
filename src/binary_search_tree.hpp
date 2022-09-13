@@ -2,7 +2,6 @@
 #include <concepts>
 #include <vector>
 #include <utility>
-#include <stdexcept>
 
 
 
@@ -150,11 +149,11 @@ public:
 		return temp;
 	}
 
-	DataType* operator->() {
-		return this->ptr_->data;
+	Node* operator->() {
+		return this->ptr_;
 	}
-	DataType& operator*() {
-		return this->ptr_->data;
+	Node& operator*() {
+		return *(this->ptr_);
 	}
 
 	binary_search_tree_iterator(Node* node)
