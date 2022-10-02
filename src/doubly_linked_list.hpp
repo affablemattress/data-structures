@@ -27,10 +27,10 @@ class doubly_linked_list_iterator {
 	using Iterator = typename doubly_linked_list_iterator;
 public:
 	bool operator==(const doubly_linked_list_iterator& other) const {
-		return (this->ptr_ == other->ptr_)
+		return (this->ptr_ == other->ptr_);
 	}
 	bool operator!=(const doubly_linked_list_iterator& other) const {
-		return (this->ptr_ != other->ptr_)
+		return (this->ptr_ != other->ptr_);
 	}
 
 	Iterator& operator++() {
@@ -145,7 +145,7 @@ public:
 		}
 		else {
 			Node* returnNode = this->head_;
-			for (size_t i = index; i < size; i++) {
+			for (size_t i = index; i < this->size_; i++) {
 				returnNode = returnNode->next_;
 			}
 			return returnNode->data_;
@@ -235,7 +235,7 @@ public:
 	}
 
 	void insert(size_t index, const DataType& data) {
-		if ((index > size) || (index < 0)) {
+		if ((index > this->size_) || (index < 0)) {
 			throw std::out_of_range();
 		}
 		else {
@@ -268,7 +268,7 @@ public:
 		}
 	}
 	void insert(size_t index, DataType&& data) {
-		if ((index > size) || (index < 0)) {
+		if ((index > this->size_) || (index < 0)) {
 			throw std::out_of_range();
 		}
 		else {
@@ -302,7 +302,7 @@ public:
 	}
 	template<typename... Args>
 	void emplace(size_t index, Args... args) {
-		if ((index > size) || (index < 0)) {
+		if ((index > this->size_) || (index < 0)) {
 			throw std::out_of_range();
 		}
 		else {
@@ -336,10 +336,10 @@ public:
 	}
 
 	void pop_back() {
-		if (size == 0) {
+		if (this->size_ == 0) {
 			return;
 		}
-		else if (size == 1) {
+		else if (this->size_ == 1) {
 			delete this->tail_;
 			this->head_ = nullptr;
 			this->tail_ = nullptr;
@@ -388,7 +388,7 @@ public:
 				node->previous_->next_ = node->next_;
 			}
 			else {
-				this->head_ = node->next_
+				this->head_ = node->next_;
 				node->next_->previous_ = nullptr;
 			}
 
@@ -501,6 +501,8 @@ public:
 	~doubly_linked_list() {
 		this->clear();
 	}
+
+	doubly_linked_list() {};
 private:
 	Node* head_ = nullptr;
 	Node* tail_ = nullptr;

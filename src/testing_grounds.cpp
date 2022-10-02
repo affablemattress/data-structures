@@ -1,6 +1,7 @@
 #include "tracked_array.hpp"
 #include "binary_search_tree.hpp"
 #include "avl_tree.hpp"
+#include "doubly_linked_list.hpp"
 
 #include <iostream>
 #include <chrono>
@@ -273,6 +274,17 @@ namespace BSTUtilities{
 		delete[] indices;
 	}
 }
+namespace DLLUtilities{
+	doubly_linked_list<Tracer> CreateOrderedListOfSize(size_t size) {
+		doubly_linked_list<Tracer> list;
+		for (size_t i = 0; i < size; i++)
+		{
+			list.emplace_back();
+		}
+		return list;
+	}
+}
+
 
 constexpr size_t size = 10000;
 
@@ -293,6 +305,10 @@ int main(int argc, char** args) {
 			avl_tree<int, Tracer> avl = AVLUtilities::CreateRandomTreeOfSize(size);
 			AVLUtilities::RandomlyClearTreeOfSize(avl, size);
 		HEADLESS_ITERATE_TIMER_END("AVL Leak Test: Randomly Create then Clear Tree of Size " << size)
+		
+		HEADLESS_ITERATE_TIMER_START(iter)
+			doubly_linked_list<Tracer> dll = DLLUtilities::CreateOrderedListOfSize(size);
+		HEADLESS_ITERATE_TIMER_END("Doubly-Linked List Leak Test: Create then Clear DLL of Size " << size)
 	}
 
 	//Operation Time Complexity Tests
@@ -322,5 +338,7 @@ int main(int argc, char** args) {
 			avl.remove(randomKeyArray[index]);
 			avl.emplace(randomKeyArray[index], randomKeyArray[index]);
 		ITERATE_TIMER_END("AVL Operation Time Complexity Test: Search/Remove/Insert To Random Tree of Size " << size)
+	
+		ITERATE_TIMER_START(iter)
 	}
 }
